@@ -69,15 +69,24 @@
 			padding-top:20px;
 			border-top:1px solid #ccc;
 		}
+
+		img {
+			width:200px;
+			height:200px;
+		}
+
+		img#test {
+			opacity:1;
+		}
 	</style>
 </head>
 <body>
 	<h1>jquery.animate-enhanced plugin test</h1>
-	<h2>Test: $.animate() with 'easeInQuint' easing for CSS but no jQuery easing plugin loaded.</h2>
+	<h2>Test: Callback on no animation</h2>
 
 	<h2>Demo</h2>
 	<div class="target">
-		Content to slide
+		<img src="http://www.benbarnett.net/wp-content/uploads/2010/07/benb1.jpg" id="test" alt="Test Image">
 	</div>
 	
 	<button id="start">Run test</button>
@@ -88,10 +97,15 @@
 	<script type="text/javascript" charset="utf-8">
 		$('button#start').click(function() {
 			button = $(this).attr('disabled', 'disabled');
-			$('.target').animate({left: "+=200px", avoidTransforms: true}, 400, "easeInQuint", function() {
-				$('.target').animate({left: 0}, 400, "easeInQuint", function() {
+			$('.target').fadeOut(0, function() {
+				$('.target').fadeIn(1000, function() {
 					button.removeAttr('disabled');
 				});
+			});
+			
+			$('img#test').animate({opacity: 1}, 500, function() {
+				console.log('Callback fired');
+			    this.src = 'http://29.media.tumblr.com/tumblr_lg4espXhQS1qb58fro1_400.jpg';
 			});
 		});
 		

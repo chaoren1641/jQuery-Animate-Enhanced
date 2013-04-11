@@ -3,7 +3,7 @@ jquery.animate-enhanced plugin
 
 Extend $.animate() to detect CSS transitions for Webkit, Mozilla and Opera and convert animations automatically. Compatible with IE6+
 
-Tested with jQuery 1.3.2 to 1.6.1
+Tested with jQuery 1.3.2 to 1.8.0
 
 Properties supported: (more to come)
 -----------------
@@ -29,7 +29,7 @@ Simple animation demo and documentation found here: http://playground.benbarnett
 What it does
 -----------------
 
-The plugin will analyse the properties you're animating on, and select the most appropriate method for the browser in use. This means your transitions on left, top and opacity will convert to a CSS3 transition on Webkit & Mozilla agents that support it, and Opera 10.50+. If the user is on a browser that has no CSS3 transitions, this plugin knows about it and won't get involved. Silent degradation :)
+The plugin will analyse the properties you're animating on, and select the most appropriate method for the browser in use. This means your transitions on left, top and opacity will convert to a CSS3 transition on Webkit & Mozilla agents that support it, and Opera 10.50+. If the user is on a browser that has no CSS3 transitions, this plugin knows about it and won't get involved. Silent degradation.
 
 Multiple callback mechanisms are created internally to monitor for DOM manipulation and for all 'transitionend' CSS3 events to be picked up. This means you have one neat callback() for the whole animation regardless on whether the plugin is using CSS3, DOM, or both for its animations.
 
@@ -63,6 +63,9 @@ Returns new setting
 * $.toggleDisabledByDefault()
 Toggle the plugin to be disabled by default (can be overridden per animation with avoidCSSTransitions described above)
 Returns new setting
+* $.setDisabledByDefault(value)
+Explicitly disable or enable the plugin (can be overridden per animation with avoidCSSTransitions described above)
+Returns new setting
 * $(e).translation()
 Returns current X and Y coordinates for (e) no matter how the element is being positioned
 Returns in the format { x: 0, y: 0 }
@@ -76,6 +79,44 @@ Since v0.77, the plugin will now automatically use 3D Translations where support
 
 Changelog
 -----------------
+
+0.99 (5/12/2012):
+
+* PR #109 Added support for list-item nodes. FadeIn on tags was omitting the list-style support. (thx @SeanCannon)
+
+0.98 (12/11/2012):
+
+* Merging pull request #106 thx @gboysko - checking for ownerDocument before using getComputedStyle
+
+0.97 (6/11/2012):
+
+* Merging pull request #104 thx @gavrochelegnou - .bind instead of .one
+
+0.96a (20/08/2012):
+
+* Checking event is from dispatch target (issue #58)
+
+0.96 (20/08/2012):
+
+* Fixes for context, all elements returned as context (issue #84)
+* Reset position with leaveTransforms !== true fixes (issue #93)
+
+0.95 (20/08/2012):
+
+* If target opacity == current opacity, pass back to jquery native to get callback firing (#94)
+
+0.94 (20/08/2012):
+
+* Addresses Firefox callback mechanisms (issue #94)
+* using $.one() to bind to CSS callbacks in a more generic way
+
+0.93 (6/8/2012):
+
+* Adding other Opera 'transitionend' event (re: issue #90)
+
+0.92 (6/8/2012):
+
+* Seperate unbinds into different threads (re: issue #91)
 
 0.91 (2/4/2012):
 

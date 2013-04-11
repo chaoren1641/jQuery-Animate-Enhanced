@@ -1,5 +1,5 @@
 /*
-jquery.animate-enhanced plugin v0.91
+jquery.animate-enhanced plugin v0.99
 ---
 http://github.com/benbarnett/jQuery-Animate-Enhanced
 http://benbarnett.net
@@ -44,6 +44,39 @@ Usage (exactly the same as it would be normally):
 	});
 
 Changelog:
+	0.99.1 (3/4/2013):
+		- Add Set or unset the 'disabled by default' value (PR #117)
+
+	0.99 (5/12/2012):
+		- PR #109 Added support for list-item nodes. FadeIn on tags was omitting the list-style support. (thx @SeanCannon)
+		
+	0.98 (12/11/2012):
+		- Merging pull request #106 thx @gboysko - checking for ownerDocument before using getComputedStyle
+
+	0.97 (6/11/2012):
+		- Merging pull request #104 thx @gavrochelegnou - .bind instead of .one
+
+	0.96a (20/08/2012):
+		- Checking event is from dispatch target (issue #58)
+
+	0.96 (20/08/2012):
+		- Fixes for context, all elements returned as context (issue #84)
+		- Reset position with leaveTransforms !== true fixes (issue #93)
+		
+
+	0.95 (20/08/2012):
+		- If target opacity == current opacity, pass back to jquery native to get callback firing (#94)
+
+	0.94 (20/08/2012):
+		- Addresses Firefox callback mechanisms (issue #94)
+		- using $.one() to bind to CSS callbacks in a more generic way
+
+	0.93 (6/8/2012):
+		- Adding other Opera 'transitionend' event (re: issue #90)
+
+	0.92 (6/8/2012):
+		- Seperate unbinds into different threads (re: issue #91)
+
 	0.91 (2/4/2012):
 		- Merge Pull Request #74 - Unit Management
 
@@ -196,7 +229,7 @@ Changelog:
 	// ----------
 	var	cssTransitionProperties = ['top', 'right', 'bottom', 'left', 'opacity', 'height', 'width'],
 		directions = ['top', 'right', 'bottom', 'left'],
-		cssPrefixes = ['', '-webkit-', '-moz-', '-o-'],
+		cssPrefixes = ['-webkit-', '-moz-', '-o-', ''],
 		pluginOptions = ['avoidTransforms', 'useTranslate3d', 'leaveTransforms'],
 		rfxnum = /^([+-]=)?([\d+-.]+)(.*)$/,
 		rupper = /([A-Z])/g,
@@ -224,7 +257,7 @@ Changelog:
 	// ----------
 	var thisBody = document.body || document.documentElement,
 		thisStyle = thisBody.style,
-		transitionEndEvent = (thisStyle.WebkitTransition !== undefined) ? 'webkitTransitionEnd' : (thisStyle.OTransition !== undefined) ? 'oTransitionEnd' : 'transitionend',
+		transitionEndEvent = 'webkitTransitionEnd oTransitionEnd transitionend',
 		cssTransitionsSupported = thisStyle.WebkitTransition !== undefined || thisStyle.MozTransition !== undefined || thisStyle.OTransition !== undefined || thisStyle.transition !== undefined,
 		has3D = ('WebKitCSSMatrix' in window && 'm11' in new WebKitCSSMatrix()),
 		use3DByDefault = has3D;
@@ -267,6 +300,7 @@ Changelog:
 	function _interpretValue(e, val, prop, isTransform) {
 		// this is a nasty fix, but we check for prop == 'd' to see if we're dealing with SVG, and abort
 		if (prop == "d") return;
+		if (!_isValidElement(e)) return;
 		
 		var parts = rfxnum.exec(val),
 			start = e.css(prop) === 'auto' ? 0 : e.css(prop),
@@ -284,7 +318,7 @@ Changelog:
 		// deal with shortcuts
 		if (!parts && val == 'show') {
 			cleanStart = 1;
-			if (hidden) e.css({'display':'block', 'opacity': 0});
+			if (hidden) e.css({'display': (e.context.tagName == 'LI') ? 'list-item' : 'block', 'opacity': 0});
 		} else if (!parts && val == "hide") {
 			cleanStart = 0;
 		}
@@ -451,10 +485,18 @@ Changelog:
 		@param {variant} [val]
 	*/
 	function _cleanValue(val) {
-		valUnit = _getUnit(val);
-		return parseFloat(val.replace(/px/i, ''));
+		return parseFloat(val.replace(_getUnit(val), ''));
 	}
 
+
+	function _isValidElement(element) {
+		var allValid=true;
+		element.each(function(index, el) {
+			allValid = allValid && el.ownerDocument;
+			return allValid;
+		});
+		return allValid;
+	}
 
 	/**
 		@private
@@ -465,8 +507,12 @@ Changelog:
 		@param {variant} [value]
 	*/
 	function _appropriateProperty(prop, value, element) {
+		if (!_isValidElement(element)) {
+			return false;
+		}
+
 		var is = jQuery.inArray(prop, cssTransitionProperties) > -1;
-		if ((prop == 'width' || prop == 'height') && (value === parseFloat(element.css(prop)))) is = false;
+		if ((prop == 'width' || prop == 'height' || prop == 'opacity') && (parseFloat(value) === parseFloat(element.css(prop)))) is = false;
 		return is;
 	}
 
@@ -485,12 +531,23 @@ Changelog:
 		
 		/**
 			@public
-			@name toggleEnabledByDefault
+			@name toggleDisabledByDefault
 			@function
 			@description Toggle the plugin to be disabled by default (can be overridden per animation with avoidCSSTransitions)
 		*/
 		toggleDisabledByDefault: function() {
 			return pluginDisabledDefault = !pluginDisabledDefault;
+		},
+
+
+		/**
+			@public
+			@name setDisabledByDefault
+			@function
+			@description Set or unset the 'disabled by default' value
+		*/
+		setDisabledByDefault: function(newValue) {
+			return pluginDisabledDefault = newValue;
 		}
 	});
 
@@ -554,7 +611,7 @@ Changelog:
 				if (callbackQueue === 0) {
 					// we're done, trigger the user callback
 					if (typeof optall.complete === 'function') {
-						optall.complete.apply(elements[0], arguments);
+						optall.complete.apply(elements, arguments);
 					}
 				}
 			},
@@ -567,9 +624,12 @@ Changelog:
 		return this[ optall.queue === true ? 'queue' : 'each' ](function() {
 			var self = jQuery(this),
 				opt = jQuery.extend({}, optall),
-				cssCallback = function() {
+				cssCallback = function(e) {
 					var selfCSSData = self.data(DATA_KEY) || { original: {} },
 						restore = {};
+
+					if (e.eventPhase != 2)  // not at dispatching target (thanks @warappa issue #58)
+						return;
 
 					// convert translations to left & top for layout
 					if (prop.leaveTransforms !== true) {
@@ -579,6 +639,7 @@ Changelog:
 						if (isTranslatable && typeof selfCSSData.meta !== 'undefined') {
 							for (var j = 0, dir; (dir = directions[j]); ++j) {
 								restore[dir] = selfCSSData.meta[dir + '_o'] + valUnit;
+								jQuery(this).css(dir, restore[dir]);
 							}
 						}
 					}
@@ -596,7 +657,7 @@ Changelog:
 					}
 
 					// run the main callback function
-					propertyCallback.call(self);
+					propertyCallback.call(this);
 				},
 				easings = {
 					bounce: CUBIC_BEZIER_OPEN + '0.0, 0.35, .5, 1.3' + CUBIC_BEZIER_CLOSE,
@@ -761,9 +822,10 @@ Changelog:
 					}
 				}
 
-				// remove transition timing functions
+				// Remove transition timing functions
+				// Moving to seperate thread (re: Animation reverts when finished in Android - issue #91)
+				self.unbind(transitionEndEvent);
 				self.
-					unbind(transitionEndEvent).
 					css(selfCSSData.original).
 					css(restore).
 					data(DATA_KEY, null);
